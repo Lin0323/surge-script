@@ -2,11 +2,9 @@
 // @name         猫熊机场 - 自动登录签到版
 // ==/UserScript==
 
-// 账号信息
 const username = "linzhihua0323@qq.com";
 const password = "zhihua080729";
 
-// 域名还是魔仙的网址
 const site = "https://mxwljsq.com";
 
 const cookieKey = "maoxiong_cookie_auto";
