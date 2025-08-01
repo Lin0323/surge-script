@@ -13,11 +13,21 @@ function saveCookie(headers) {
   let setCookie = headers["Set-Cookie"] || headers["set-cookie"];
   if (!setCookie) return null;
 
-  if (typeof setCookie === "string") {
-    setCookie = [setCookie];
+  if (Array.isArray(setCookie)) {
+    return handleCookieArray(setCookie);
+  } else if (typeof setCookie === "string") {
+    return handleCookieArray([setCookie]);
+  } else {
+    try {
+      return handleCookieArray([setCookie.toString()]);
+    } catch {
+      return null;
+    }
   }
+}
 
-  const cookie = setCookie.map(c => c.split(";")[0]).join("; ");
+function handleCookieArray(arr) {
+  const cookie = arr.map(c => c.split(";")[0]).join("; ");
   $persistentStore.write(cookie, cookieKey);
   return cookie;
 }
