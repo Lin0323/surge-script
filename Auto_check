@@ -1,0 +1,102 @@
+// ==UserScript==
+// @name         猫熊机场 - 自动登录签到版
+// ==/UserScript==
+
+// 账号信息
+const username = "linzhihua0323@qq.com";
+const password = "zhihua080729";
+
+// 域名还是魔仙的网址
+const site = "https://mxwljsq.com";
+
+const cookieKey = "maoxiong_cookie_auto";
+
+function saveCookie(headers) {
+  const setCookie = headers["Set-Cookie"] || headers["set-cookie"];
+  if (setCookie) {
+    const cookie = setCookie.map(c => c.split(";")[0]).join("; ");
+    $persistentStore.write(cookie, cookieKey);
+    return cookie;
+  }
+  return null;
+}
+
+function loginAndCheckin() {
+  const loginReq = {
+    url: site + "/auth/login",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: `email=${encodeURIComponent(username)}&passwd=${encodeURIComponent(password)}`
+  };
+
+  $httpClient.post(loginReq, function (err, resp, data) {
+    if (err) {
+      $notification.post("猫熊签到失败", "", "登录请求错误");
+      $done();
+      return;
+    }
+
+    if (resp.status === 200) {
+      const newCookie = saveCookie(resp.headers);
+      if (newCookie) {
+        checkin(newCookie);
+      } else {
+        $notification.post("猫熊签到失败", "", "登录未返回Cookie");
+        $done();
+      }
+    } else {
+      $notification.post("猫熊签到失败", "", "登录失败，请检查账号密码");
+      $done();
+    }
+  });
+}
+
+function checkin(cookie) {
+  const req = {
+    url: site + "/user/checkin",
+    headers: { "Cookie": cookie, "User-Agent": "Surge" },
+    body: ""
+  };
+
+  $httpClient.post(req, function (error, response, data) {
+    if (error) {
+      $notification.post("猫熊签到失败", "", error);
+    } else {
+      try {
+        const json = JSON.parse(data);
+        $notification.post("猫熊签到结果", "", json.msg || data);
+      } catch (e) {
+        $notification.post("猫熊签到", "", data);
+      }
+    }
+    $done();
+  });
+}
+
+let cookie = $persistentStore.read(cookieKey);
+
+if (!cookie) {
+  loginAndCheckin();
+} else {
+  const req = {
+    url: site + "/user/checkin",
+    headers: { "Cookie": cookie, "User-Agent": "Surge" },
+    body: ""
+  };
+
+  $httpClient.post(req, function (error, response, data) {
+    if (error) {
+      $notification.post("猫熊签到失败", "", error);
+      $done();
+    } else if (response.status === 302 || data.indexOf("需要登录") !== -1) {
+      loginAndCheckin();
+    } else {
+      try {
+        const json = JSON.parse(data);
+        $notification.post("猫熊签到结果", "", json.msg || data);
+      } catch (e) {
+        $notification.post("猫熊签到", "", data);
+      }
+      $done();
+    }
+  });
+}
