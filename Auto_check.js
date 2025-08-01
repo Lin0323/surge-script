@@ -10,13 +10,16 @@ const site = "https://mxwljsq.com";
 const cookieKey = "maoxiong_cookie_auto";
 
 function saveCookie(headers) {
-  const setCookie = headers["Set-Cookie"] || headers["set-cookie"];
-  if (setCookie) {
-    const cookie = setCookie.map(c => c.split(";")[0]).join("; ");
-    $persistentStore.write(cookie, cookieKey);
-    return cookie;
+  let setCookie = headers["Set-Cookie"] || headers["set-cookie"];
+  if (!setCookie) return null;
+
+  if (typeof setCookie === "string") {
+    setCookie = [setCookie];
   }
-  return null;
+
+  const cookie = setCookie.map(c => c.split(";")[0]).join("; ");
+  $persistentStore.write(cookie, cookieKey);
+  return cookie;
 }
 
 function loginAndCheckin() {
